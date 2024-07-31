@@ -66,7 +66,7 @@ client.on("privmsg:channel", ({ source, params }) => {
   // Messages following this format are sent to zulip:
   // `#(topic-name): message` as a stream message in topic of the pattern `irc-name: message-content`
   if (params.text[0] === "#") {
-    const parts = params.text.split(/\(([^)]*)\)[ :](.*)/s);
+    const parts = params.text.split(/\(([^)]*)\)[ :]*(.*)/s);
     const parameters = new URLSearchParams({
       type: "stream",
       to: zulipStreams[ircChannel_to_zulipID[params.target]],
