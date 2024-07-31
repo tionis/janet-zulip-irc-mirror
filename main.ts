@@ -11,6 +11,7 @@ const password: string = Deno.env.get("ZULIP_KEY");
 const authHeader: string = "Basic " + btoa(username + ":" + password);
 const queue_id: string = Deno.env.get("ZULIP_QUEUE_ID");
 const store_dir: string = ".db";
+const irc_admins: string[] = ["tionis"];
 let last_event_id: number = Number(Deno.readTextFileSync(store_dir + "/last_event_id"),);
 console.log(`Starting from event_id ${last_event_id}`)
 
@@ -140,6 +141,8 @@ client.on("error", (error) => {
 
 client.on("privmsg:private", ({ source, params }) => {
   console.log("[PRIVMSG] from: " + source?.name + "\n" + params.text + "\n");
+  const is_admin: boolean = irc_admins.includes(source?.name!);
+  const commands:string[] = is_admin ? ["heartbeat", "ping", "help"] : ["heartbeat", "ping", "help", "msg", "join", "part"];
   const command = params.text.split(" ")[0];
   switch (command) {
     case "heartbeat":
@@ -149,10 +152,28 @@ client.on("privmsg:private", ({ source, params }) => {
       client.privmsg(source?.name!, "pong");
       break;
     case "help":
-      client.privmsg(source?.name!, "Commands: heartbeat, ping, help");
+      client.privmsg(source?.name!, `Commands: ${commands.join(", ")}`);
       break;
+    case "msg":
+      if (is_admin) {
+        const [_, target, ...message] = params.text.split(" ");
+        client.privmsg(target, message.join(" "));
+      }
+      break;
+    case "join":
+      if (is_admin) {
+        const [_, channel] = params.text.split(" ");
+        client.join(channel);
+      }
+      break;
+    case "part":
+      if (is_admin) {
+        const [_, channel] = params.text.split(" ");
+        client.part(channel);
+      }
+      break
     default:
-      client.privmsg(source?.name!, "Unknown command. Commands: heartbeat, ping, help");
+      client.privmsg(source?.name!, `Unknown command. Commands: ${commands.join(", ")}`);
   }
 });
 
