@@ -1,0 +1,23 @@
+{
+  "modules": {
+    "https://deno.land/x/exec/mod.ts": {
+      "headers": {
+        "location": "/x/exec@0.0.5/mod.ts",
+        "x-deno-warning": "Implicitly using latest version (0.0.5) for https://deno.land/x/exec/mod.ts"
+      }
+    },
+    "https://deno.land/x/irc/mod.ts": {
+      "headers": {
+        "location": "/x/irc@v0.15.0/mod.ts",
+        "x-deno-warning": "Implicitly using latest version (v0.15.0) for https://deno.land/x/irc/mod.ts"
+      }
+    },
+    "https://deno.land/std/uuid/mod.ts": {
+      "headers": {
+        "location": "/std@0.224.0/uuid/mod.ts",
+        "x-deno-warning": "Implicitly using latest version (0.224.0) for https://deno.land/std/uuid/mod.ts"
+      }
+    },
+    "https://deno.land/std@0.224.0/crypto/_wasm/lib/deno_std_wasm_crypto.generated.mjs": {}
+  }
+}
