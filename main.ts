@@ -1,19 +1,18 @@
-#!/bin/env -S deno run --allow-net=janet.zulipchat.com:443,irc.libera.chat:6697 --allow-env=ZULIP_USERNAME,ZULIP_KEY,ZULIP_QUEUE_ID,IRC_PASSWORD --allow-read=".db" --allow-write=".db"
+#!/bin/env -S deno run --allow-net=janet.zulipchat.com:443,irc.libera.chat:6697 --allow-env=ZULIP_USERNAME,ZULIP_KEY,ZULIP_QUEUE_ID,IRC_PASSWORD --allow-read=".db" --allow-write=".db" --env
 import { exec, OutputMode } from "https://deno.land/x/exec/mod.ts";
 import { Client } from "https://deno.land/x/irc/mod.ts";
-import * as path from "https://deno.land/std@0.224.0/path/mod.ts";
 
 type IntToStr = { [key: number]: string };
 type StrToStr = { [key: string]: string };
 type StrToInt = { [key: string]: number };
 
-const username: string = Deno.env.get("ZULIP_USERNAME")!;
-const password: string = Deno.env.get("ZULIP_KEY")!;
+const username: string = Deno.env.get("ZULIP_USERNAME");
+const password: string = Deno.env.get("ZULIP_KEY");
 const authHeader: string = "Basic " + btoa(username + ":" + password);
-const queue_id: number = Number(Deno.env.get("ZULIP_QUEUE_ID")!);
+const queue_id: string = Deno.env.get("ZULIP_QUEUE_ID");
 const store_dir: string = ".db";
 let last_event_id: number = Number(Deno.readTextFileSync(store_dir + "/last_event_id"),);
-console.log("Starting from event id: " + last_event_id.toString());
+console.log(`Starting from event_id ${last_event_id}`)
 
 const fetch_config = {
   method: "GET",
