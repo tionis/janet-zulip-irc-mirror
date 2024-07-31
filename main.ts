@@ -63,6 +63,9 @@ client.on("privmsg:channel", ({ source, params }) => {
   console.log(
     `[PRIVMSG] from: ${source?.name} to: ${params.target}\n${params.text}\n`,
   );
+  if (source?.name === "janet-zulip") {
+    return;
+  }
   // Messages following this format are sent to zulip:
   // `#(topic-name): message` as a stream message in topic of the pattern `irc-name: message-content`
   if (params.text[0] === "#") {
@@ -72,6 +75,21 @@ client.on("privmsg:channel", ({ source, params }) => {
       to: zulipStreams[ircChannel_to_zulipID[params.target]],
       topic: parts[1],
       content: `${source?.name}: ${parts[2]}`,
+    });
+    fetch("https://janet.zulipchat.com/api/v1/messages", {
+      method: "POST",
+      headers: {
+        "Authorization": authHeader,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: parameters,
+    }).then((resp) => resp.text()).then((text) => console.log(text));
+  }else{
+    const parameters = new URLSearchParams({
+      type: "stream",
+      to: zulipStreams[ircChannel_to_zulipID[params.target]],
+      topic: "IRC",
+      content: `${source?.name}: ${params.text}`,
     });
     fetch("https://janet.zulipchat.com/api/v1/messages", {
       method: "POST",
