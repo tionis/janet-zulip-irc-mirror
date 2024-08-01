@@ -178,8 +178,13 @@ irc.on("myinfo", (msg) => {
 
 irc.on("error", (error) => {
   console.log(
-    `[ERROR] <irc> Name: ${error.name}[^^^^^] <irc> Message: ${error.message}[^^^^^] <irc> Type: ${error.type}`,
+    `[ERROR] <irc> Name: ${error.name}\n[^^^^^] <irc> Message: ${error.message}\n[^^^^^] <irc> Type: ${error.type}`,
   );
+  // TODO send admin notification (over some other channel)
+  // wait for 60 seconds and reconnect
+  setTimeout(() => {
+    irc.connect("irc.libera.chat", 6697, true);
+  }, 60000);
 });
 
 irc.on("privmsg:private", ({ source, params }) => {
