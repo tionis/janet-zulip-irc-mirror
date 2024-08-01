@@ -1,4 +1,4 @@
-#!/bin/env -S deno run --allow-net=janet.zulipchat.com:443,irc.libera.chat:6697 --allow-env=ZULIP_USERNAME,ZULIP_KEY,ZULIP_QUEUE_ID,IRC_PASSWORD --allow-read=".db" --allow-write=".db" --env
+#!/bin/env -S deno run --allow-net=janet.zulipchat.com:443,irc.libera.chat:6697 --allow-env=JANET_ZULIP_IRC_BRIDGE_ZULIP_USERNAME,JANET_ZULIP_IRC_BRIDGE_ZULIP_KEY,JANET_ZULIP_IRC_BRIDGE_IRC_PASSWORD --env
 import { Client as IrcClient } from "https://deno.land/x/irc/mod.ts";
 
 // Types
@@ -7,21 +7,24 @@ type StrToStr = { [key: string]: string };
 type StrToInt = { [key: string]: number };
 
 // Static Config[]
-const zulipUsername: string = Deno.env.get("ZULIP_USERNAME") ?? "";
-const zulipKey: string = Deno.env.get("ZULIP_KEY") ?? "";
+const zulipUsername: string =
+  Deno.env.get("JANET_ZULIP_IRC_BRIDGE_ZULIP_USERNAME") ?? "";
+const zulipKey: string = Deno.env.get("JANET_ZULIP_IRC_BRIDGE_ZULIP_KEY") ?? "";
 const zulipAuthHeader: string = "Basic " + btoa(zulipUsername + ":" + zulipKey);
 const ircAdmins: string[] = ["tionis"];
 if (zulipUsername === "" || zulipKey === "") {
-  console.error("[ERROR] Zulip username or key not set in environment variables.");
+  console.error(
+    "[ERROR] Zulip username or key not set in environment variables.",
+  );
   Deno.exit(1);
 }
 
 // Helper functions
-async function zulipGetQueue(){
+async function zulipGetQueue() {
   const resp = await fetch("https://janet.zulipchat.com/api/v1/register", {
     method: "POST",
     headers: {
-      "Authorization": zulipAuthHeader,
+      Authorization: zulipAuthHeader,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
@@ -35,11 +38,13 @@ async function zulipGetQueue(){
 // Dynamic Config
 const subscriptions = await fetch(
   "https://janet.zulipchat.com/api/v1/users/me/subscriptions",
-  {method: "GET", headers: {"Authorization": zulipAuthHeader}},
-).then((resp) => resp.text()).then((text) => JSON.parse(text));
+  { method: "GET", headers: { Authorization: zulipAuthHeader } },
+)
+  .then((resp) => resp.text())
+  .then((text) => JSON.parse(text));
 
 // Setting up queue
-let queue_id:string = await zulipGetQueue();
+let queue_id: string = await zulipGetQueue();
 let last_event_id: number = -1;
 
 const zulipStreams: IntToStr = {};
@@ -47,7 +52,7 @@ for (const subscription of subscriptions.subscriptions) {
   zulipStreams[subscription.stream_id] = subscription.name;
 }
 const streamNameMap: StrToStr = {
-  "general": "#janet",
+  general: "#janet",
   "editors and tooling": "#janet-tooling",
 };
 const zulipID_to_IrcChannel: IntToStr = {};
@@ -57,7 +62,8 @@ for (const [streamID, streamName] of Object.entries(zulipStreams)) {
   if (streamName in streamNameMap) {
     zulipID_to_IrcChannel[Number(streamID)] = streamNameMap[streamName];
   } else {
-    zulipID_to_IrcChannel[Number(streamID)] = "#janet-" + streamName.replace(" ", "-");
+    zulipID_to_IrcChannel[Number(streamID)] =
+      "#janet-" + streamName.replace(" ", "-");
   }
 }
 
@@ -69,7 +75,7 @@ const irc = new IrcClient({
   nick: "janet-zulip",
   authMethod: "sasl",
   channels: Object.values(zulipID_to_IrcChannel),
-  password: Deno.env.get("IRC_PASSWORD")!,
+  password: Deno.env.get("JANET_ZULIP_IRC_BRIDGE_IRC_PASSWORD")!,
 });
 
 let last_hearbeat_time: Date;
@@ -94,12 +100,14 @@ irc.on("privmsg:channel", ({ source, params }) => {
     fetch("https://janet.zulipchat.com/api/v1/messages", {
       method: "POST",
       headers: {
-        "Authorization": zulipAuthHeader,
+        Authorization: zulipAuthHeader,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: parameters,
-    }).then((resp) => resp.text()).then((text) => console.log(text));
-  }else{
+    })
+      .then((resp) => resp.text())
+      .then((text) => console.log(text));
+  } else {
     const parameters = new URLSearchParams({
       type: "stream",
       to: zulipStreams[ircChannel_to_zulipID[params.target]],
@@ -109,11 +117,13 @@ irc.on("privmsg:channel", ({ source, params }) => {
     fetch("https://janet.zulipchat.com/api/v1/messages", {
       method: "POST",
       headers: {
-        "Authorization": zulipAuthHeader,
+        Authorization: zulipAuthHeader,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: parameters,
-    }).then((resp) => resp.text()).then((text) => console.log(text));
+    })
+      .then((resp) => resp.text())
+      .then((text) => console.log(text));
   }
 });
 
@@ -160,9 +170,9 @@ irc.on("notice", ({ source, params }) => {
 
 irc.on("myinfo", (msg) => {
   console.log(
-    `[MYINFO] Connected to ${
-      JSON.stringify(msg.params.server)
-    } with user modes ${msg.params.usermodes} and channel modes ${msg.params.chanmodes}`,
+    `[MYINFO] Connected to ${JSON.stringify(
+      msg.params.server,
+    )} with user modes ${msg.params.usermodes} and channel modes ${msg.params.chanmodes}`,
   );
 });
 
@@ -175,7 +185,9 @@ irc.on("error", (error) => {
 irc.on("privmsg:private", ({ source, params }) => {
   console.log(`[PRIVMSG] <irc> ${source?.name}: ${params.text}`);
   const is_admin: boolean = ircAdmins.includes(source?.name!);
-  const commands:string[] = is_admin ? ["heartbeat", "ping", "help"] : ["heartbeat", "ping", "help", "msg", "join", "part"];
+  const commands: string[] = is_admin
+    ? ["heartbeat", "ping", "help"]
+    : ["heartbeat", "ping", "help", "msg", "join", "part"];
   const command = params.text.split(" ")[0];
   switch (command) {
     case "heartbeat":
@@ -204,9 +216,12 @@ irc.on("privmsg:private", ({ source, params }) => {
         const [_, channel] = params.text.split(" ");
         irc.part(channel);
       }
-      break
+      break;
     default:
-      irc.privmsg(source?.name!, `Unknown command. Commands: ${commands.join(", ")}`);
+      irc.privmsg(
+        source?.name!,
+        `Unknown command. Commands: ${commands.join(", ")}`,
+      );
   }
 });
 
@@ -220,23 +235,28 @@ console.log("[INFO] Starting zulip event loop...");
       last_event_id: last_event_id.toString(),
     }).toString();
     const url = "https://janet.zulipchat.com/api/v1/events?" + params;
-    const resp = await fetch(url, {method: "GET", headers: {"Authorization": zulipAuthHeader}});
+    const resp = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: zulipAuthHeader },
+    });
     const parsedResp = JSON.parse(await resp.text());
     if (parsedResp.result != "success") {
-      switch(parsedResp.code){
-				case "BAD_EVENT_QUEUE_ID":
-          console.log("[INFO] <zulip> Event queue id expired. Requesting new queue id...");
+      switch (parsedResp.code) {
+        case "BAD_EVENT_QUEUE_ID":
+          console.log(
+            "[INFO] <zulip> Event queue id expired. Requesting new queue id...",
+          );
           queue_id = await zulipGetQueue();
           last_event_id = -1;
           continue;
         default:
-          console.log("[ERROR] <zulip> Unknown error occurred:")
+          console.log("[ERROR] <zulip> Unknown error occurred:");
           console.log(parsedResp);
-          for (const admin of ircAdmins){
+          for (const admin of ircAdmins) {
             irc.privmsg(admin, `Error fetching events from zulip api:`);
             irc.privmsg(admin, JSON.stringify(parsedResp));
           }
-          break
+          break;
       }
       return;
     }
@@ -244,7 +264,8 @@ console.log("[INFO] Starting zulip event loop...");
       if (event.type === "heartbeat") {
         last_hearbeat_time = new Date();
       } else if (
-        event.type === "message" && event.message.sender_email !== zulipUsername
+        event.type === "message" &&
+        event.message.sender_email !== zulipUsername
       ) {
         console.log(["DEBUG", "New Message", event]);
         if (event.message.type === "stream") {
