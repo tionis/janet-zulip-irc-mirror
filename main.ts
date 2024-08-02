@@ -74,7 +74,7 @@ for (const [zulipID, ircChannel] of Object.entries(zulipID_to_IrcChannel)) {
 const irc = new IrcClient({
   nick: "janet-zulip",
   authMethod: "sasl",
-  reconnect: true,
+  reconnect: { attempts: 1000, delay: 10 },
   channels: Object.values(zulipID_to_IrcChannel),
   password: Deno.env.get("JANET_ZULIP_IRC_BRIDGE_IRC_PASSWORD")!,
 });
