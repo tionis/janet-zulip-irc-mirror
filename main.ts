@@ -74,6 +74,7 @@ for (const [zulipID, ircChannel] of Object.entries(zulipID_to_IrcChannel)) {
 const irc = new IrcClient({
   nick: "janet-zulip",
   authMethod: "sasl",
+  reconnect: true,
   channels: Object.values(zulipID_to_IrcChannel),
   password: Deno.env.get("JANET_ZULIP_IRC_BRIDGE_IRC_PASSWORD")!,
 });
@@ -181,10 +182,6 @@ irc.on("error", (error) => {
     `[ERROR] <irc> Name: ${error.name}\n[^^^^^] <irc> Message: ${error.message}\n[^^^^^] <irc> Type: ${error.type}`,
   );
   // TODO send admin notification (over some other channel)
-  // wait for 60 seconds and reconnect
-  setTimeout(() => {
-    irc.connect("irc.libera.chat", 6697, true);
-  }, 60000);
 });
 
 irc.on("privmsg:private", ({ source, params }) => {
