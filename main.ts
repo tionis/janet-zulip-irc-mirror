@@ -232,65 +232,75 @@ irc.connect("irc.libera.chat", 6697, true);
 console.log("[INFO] Starting zulip event loop...");
 (async () => {
   while (true) {
-    const params = new URLSearchParams({
-      queue_id: queue_id.toString(),
-      last_event_id: last_event_id.toString(),
-    }).toString();
-    const url = "https://janet.zulipchat.com/api/v1/events?" + params;
-    const resp = await fetch(url, {
-      method: "GET",
-      headers: { Authorization: zulipAuthHeader },
-    });
-    const parsedResp = JSON.parse(await resp.text());
-    if (parsedResp.result != "success") {
-      switch (parsedResp.code) {
-        case "BAD_EVENT_QUEUE_ID":
-          console.log(
-            "[INFO] <zulip> Event queue id expired. Requesting new queue id...",
-          );
-          queue_id = await zulipGetQueue();
-          last_event_id = -1;
-          continue;
-        default:
-          console.log("[ERROR] <zulip> Unknown error occurred:");
-          console.log(parsedResp);
-          for (const admin of ircAdmins) {
-            irc.privmsg(admin, `Error fetching events from zulip api:`);
-            irc.privmsg(admin, JSON.stringify(parsedResp));
-          }
-          break;
+    try {
+      const params = new URLSearchParams({
+        queue_id: queue_id.toString(),
+        last_event_id: last_event_id.toString(),
+      }).toString();
+      const url = "https://janet.zulipchat.com/api/v1/events?" + params;
+      const resp = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: zulipAuthHeader },
+      });
+      const parsedResp = JSON.parse(await resp.text());
+      if (parsedResp.result != "success") {
+        switch (parsedResp.code) {
+          case "BAD_EVENT_QUEUE_ID":
+            console.log(
+              "[INFO] <zulip> Event queue id expired. Requesting new queue id...",
+            );
+            queue_id = await zulipGetQueue();
+            last_event_id = -1;
+            continue;
+          default:
+            console.log("[ERROR] <zulip> Unknown error occurred:");
+            console.log(parsedResp);
+            for (const admin of ircAdmins) {
+              irc.privmsg(admin, `Error fetching events from zulip api:`);
+              irc.privmsg(admin, JSON.stringify(parsedResp));
+            }
+            break;
+        }
+        return;
       }
-      return;
-    }
-    for (const event of parsedResp.events) {
-      if (event.type === "heartbeat") {
-        last_hearbeat_time = new Date();
-      } else if (
-        event.type === "message" &&
-        event.message.sender_email !== zulipUsername
-      ) {
-        console.log(["DEBUG", "New Message", event]);
-        if (event.message.type === "stream") {
-          console.log(
-            `[INFO] <zulip> ${event.message.sender_full_name}(${event.message.subject})@${event.message.display_recipient}: ${event.message.content}`,
-          );
-          const irc_channel = zulipID_to_IrcChannel[event.message.stream_id];
-          const lines = event.message.content.split("\n");
-          const prefix = `${event.message.sender_full_name}(${event.message.subject}):`;
-          if (lines.length > 1) {
-            for (const line of lines) {
-              irc.privmsg(irc_channel, `${prefix} ${line}`);
+      for (const event of parsedResp.events) {
+        if (event.type === "heartbeat") {
+          last_hearbeat_time = new Date();
+        } else if (
+          event.type === "message" &&
+          event.message.sender_email !== zulipUsername
+        ) {
+          console.log(["DEBUG", "New Message", event]);
+          if (event.message.type === "stream") {
+            console.log(
+              `[INFO] <zulip> ${event.message.sender_full_name}(${event.message.subject})@${event.message.display_recipient}: ${event.message.content}`,
+            );
+            const irc_channel = zulipID_to_IrcChannel[event.message.stream_id];
+            const lines = event.message.content.split("\n");
+            const prefix = `${event.message.sender_full_name}(${event.message.subject}):`;
+            if (lines.length > 1) {
+              for (const line of lines) {
+                irc.privmsg(irc_channel, `${prefix} ${line}`);
+              }
+            } else {
+              irc.privmsg(irc_channel, `${prefix} ${event.message.content}`);
             }
           } else {
-            irc.privmsg(irc_channel, `${prefix} ${event.message.content}`);
+            console.log(
+              event.message.sender_email + ": " + event.message.content,
+            );
           }
-        } else {
-          console.log(
-            event.message.sender_email + ": " + event.message.content,
-          );
         }
+        last_event_id = event.id;
       }
-      last_event_id = event.id;
+    } catch (e) {
+      console.log(`[ERROR] <zulip> Error fetching events from zulip api: ${e}`);
+      for (const admin of ircAdmins) {
+        irc.privmsg(admin, `Error fetching events from zulip api:`);
+        irc.privmsg(admin, e.toString());
+      }
+      // wait for 10 seconds before retrying
+      await new Promise((resolve) => setTimeout(resolve, 10000));
     }
   }
 })();
