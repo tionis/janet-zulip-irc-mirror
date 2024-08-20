@@ -62,8 +62,8 @@ for (const [streamID, streamName] of Object.entries(zulipStreams)) {
   if (streamName in streamNameMap) {
     zulipID_to_IrcChannel[Number(streamID)] = streamNameMap[streamName];
   } else {
-    zulipID_to_IrcChannel[Number(streamID)] =
-      "#janet-" + streamName.replace(" ", "-");
+    zulipID_to_IrcChannel[Number(streamID)] = "#janet-" +
+      streamName.replace(" ", "-");
   }
 }
 
@@ -74,7 +74,7 @@ for (const [zulipID, ircChannel] of Object.entries(zulipID_to_IrcChannel)) {
 const irc = new IrcClient({
   nick: "janet-zulip",
   authMethod: "sasl",
-  reconnect: { attempts: 1000, delay: 10 },
+  reconnect: { attempts: -1, delay: 10, exponentialBackoff: true },
   channels: Object.values(zulipID_to_IrcChannel),
   password: Deno.env.get("JANET_ZULIP_IRC_BRIDGE_IRC_PASSWORD")!,
 });
@@ -171,9 +171,11 @@ irc.on("notice", ({ source, params }) => {
 
 irc.on("myinfo", (msg) => {
   console.log(
-    `[MYINFO] Connected to ${JSON.stringify(
-      msg.params.server,
-    )} with user modes ${msg.params.usermodes} and channel modes ${msg.params.chanmodes}`,
+    `[MYINFO] Connected to ${
+      JSON.stringify(
+        msg.params.server,
+      )
+    } with user modes ${msg.params.usermodes} and channel modes ${msg.params.chanmodes}`,
   );
 });
 
@@ -277,7 +279,8 @@ console.log("[INFO] Starting zulip event loop...");
             );
             const irc_channel = zulipID_to_IrcChannel[event.message.stream_id];
             const lines = event.message.content.trim().split("\n");
-            const prefix = `${event.message.sender_full_name}(${event.message.subject}):`;
+            const prefix =
+              `${event.message.sender_full_name}(${event.message.subject}):`;
             if (lines.length > 1) {
               for (const line of lines) {
                 irc.privmsg(irc_channel, `${prefix} ${line}`);
