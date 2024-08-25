@@ -278,6 +278,13 @@ console.log("[INFO] Starting zulip event loop...");
             const irc_channel = zulipID_to_IrcChannel[event.message.stream_id];
             const lines = event.message.content.trim().split("\n");
             const prefix = `${event.message.sender_full_name}(${event.message.subject}):`;
+            console.log([
+              "sending_irc_messages",
+              {
+                event: event,
+                lines: lines,
+              },
+            ]);
             for (const line of lines) {
               irc.privmsg(irc_channel, `${prefix} ${line}`);
             }
