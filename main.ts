@@ -10,8 +10,12 @@ type StrToStr = { [key: string]: string };
 type StrToInt = { [key: string]: number };
 
 // Static Config[]
-const NTFY_TOKEN: string = Deno.env.get("NTFY_TOKEN") as string;
-const PING_TOKEN: string = Deno.env.get("PING_TOKEN") as string;
+const NTFY_TOKEN: string = Deno.env.get(
+  "JANET_ZULIP_IRC_BRIDGE_NTFY_TOKEN",
+) as string;
+const PING_TOKEN: string = Deno.env.get(
+  "JANET_ZULIP_IRC_BRIDGE_PING_TOKEN",
+) as string;
 const zulipUsername: string =
   Deno.env.get("JANET_ZULIP_IRC_BRIDGE_ZULIP_USERNAME") ?? "";
 const zulipKey: string = Deno.env.get("JANET_ZULIP_IRC_BRIDGE_ZULIP_KEY") ?? "";
