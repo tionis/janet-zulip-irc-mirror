@@ -1,6 +1,5 @@
 #!/bin/env -S deno run --unstable-cron --allow-net=janet.zulipchat.com:443,irc.libera.chat:6697,ntfy.tionis.dev:443 --allow-env --env
 import { Client as IrcClient } from "https://deno.land/x/irc@v0.15.0/mod.ts";
-import LeakyBucket from "./LeakyBucket.js";
 
 const version = "0.1.0";
 
@@ -72,13 +71,13 @@ async function zulipGetQueue() {
   return JSON.parse(text).queue_id;
 }
 
-const bucket = new LeakyBucket({
-  // TODO this is broken atm
-  capacity: 5,
-  interval: 3,
-});
+// const bucket = new LeakyBucket({
+//   // TODO this is broken atm
+//   capacity: 5,
+//   interval: 3,
+// });
 async function privmsg(target: string, message: string) {
-  await bucket.throttle();
+  //await bucket.throttle();
   irc.privmsg(target, message);
 }
 
