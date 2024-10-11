@@ -1,0 +1,12 @@
+# fly.toml app configuration file generated for janet-zulip-irc-mirror on 2024-10-11T18:03:56+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'janet-zulip-irc-mirror'
+primary_region = 'cdg'
+
+[build]
+
+[[vm]]
+  size = 'shared-cpu-1x'
