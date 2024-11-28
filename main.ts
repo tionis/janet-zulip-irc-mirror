@@ -71,14 +71,22 @@ async function zulipGetQueue() {
   return JSON.parse(text).queue_id;
 }
 
-// const bucket = new LeakyBucket({
-//   // TODO this is broken atm
-//   capacity: 5,
-//   interval: 3,
-// });
+// A single connection to IRC shouldn't be sending more than 5 message bursts and then beyond that 2 seconds between bursts.
+// -> Only allow 5 messages, resetting the counter every 5 seconds.
+let messageCounter = 0;
+let lastCounterReset = new Date();
 async function privmsg(target: string, message: string) {
-  //await bucket.throttle();
-  irc.privmsg(target, message);
+  if (lastCounterReset.getSeconds() - new Date().getSeconds() >= 5) {
+    messageCounter = 0;
+    lastCounterReset = new Date();
+  }
+  if (messageCounter >= 5) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    privmsg(target, message);
+  } else {
+    messageCounter++;
+    irc.privmsg(target, message);
+  }
 }
 
 // Dynamic Config
