@@ -367,7 +367,7 @@ console.log("[INFO] Starting zulip event loop...");
               console.log([
                 "sending_irc_messages",
                 {
-                  event: event,
+                  irc_channel: irc_channel,
                   lines: lines,
                 },
               ]);
