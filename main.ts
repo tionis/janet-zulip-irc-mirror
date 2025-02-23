@@ -12,8 +12,8 @@ type StrToInt = { [key: string]: number };
 const NTFY_TOKEN: string = Deno.env.get(
   "JANET_ZULIP_IRC_BRIDGE_NTFY_TOKEN",
 ) as string;
-const PING_TOKEN: string = Deno.env.get(
-  "JANET_ZULIP_IRC_BRIDGE_PING_TOKEN",
+const HEALTHCHECK_URL: string = Deno.env.get(
+  "JANET_ZULIP_IRC_BRIDGE_HEALTHCHECK_URL",
 ) as string;
 const zulipUsername: string =
   Deno.env.get("JANET_ZULIP_IRC_BRIDGE_ZULIP_USERNAME") ?? "";
@@ -116,8 +116,8 @@ for (const [streamID, streamName] of Object.entries(zulipStreams)) {
   if (streamName in streamNameMap) {
     zulipID_to_IrcChannel[Number(streamID)] = streamNameMap[streamName];
   } else {
-    zulipID_to_IrcChannel[Number(streamID)] =
-      "#janet-" + streamName.replace(" ", "-");
+    zulipID_to_IrcChannel[Number(streamID)] = "#janet-" +
+      streamName.replace(" ", "-");
   }
 }
 
@@ -228,9 +228,11 @@ irc.on("notice", ({ source, params }) => {
 
 irc.on("myinfo", (msg) => {
   console.log(
-    `[MYINFO] Connected to ${JSON.stringify(
-      msg.params.server,
-    )} with user modes ${msg.params.usermodes} and channel modes ${msg.params.chanmodes}`,
+    `[MYINFO] Connected to ${
+      JSON.stringify(
+        msg.params.server,
+      )
+    } with user modes ${msg.params.usermodes} and channel modes ${msg.params.chanmodes}`,
   );
 });
 
@@ -300,11 +302,7 @@ irc.on("privmsg:private", ({ source, params }) => {
 irc.connect("irc.libera.chat", 6697, true);
 
 async function deadManPing() {
-  const result = await fetch("https://cloud.tionis.dev/public.php/webdav/", {
-    method: "PUT",
-    headers: { Authorization: "Basic " + btoa(PING_TOKEN + ":") },
-    body: new Date().getTime().toString(),
-  });
+  const result = await fetch(HEALTHCHECK_URL);
   if (!result.ok) {
     console.error(`Failed to send ping: ${result.statusText}`);
   }
