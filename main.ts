@@ -307,7 +307,7 @@ async function deadManPing() {
     console.error(`Failed to send ping: ${result.statusText}`);
   }
 }
-Deno.cron("deadManPing", "*/5 * * * *", deadManPing);
+Deno.cron("deadManPing", "* * * * *", deadManPing);
 
 console.log("[INFO] Starting zulip event loop...");
 (async () => {
