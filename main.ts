@@ -9,8 +9,11 @@ type StrToStr = { [key: string]: string };
 type StrToInt = { [key: string]: number };
 
 // Static Config[]
-const NTFY_TOKEN: string = Deno.env.get(
-  "JANET_ZULIP_IRC_BRIDGE_NTFY_TOKEN",
+const TELEGRAM_TOKEN: string = Deno.env.get(
+  "JANET_ZULIP_IRC_BRIDGE_TELEGRAM_TOKEN",
+) as string;
+const TELEGRAM_CHAT_ID: string = Deno.env.get(
+  "JANET_ZULIP_IRC_BRIDGE_TELEGRAM_CHAT_ID",
 ) as string;
 const HEALTHCHECK_URL: string = Deno.env.get(
   "JANET_ZULIP_IRC_BRIDGE_HEALTHCHECK_URL",
@@ -28,31 +31,29 @@ if (zulipUsername === "" || zulipKey === "") {
 }
 
 async function ntfy(channel: string, message: string) {
-  const result = await fetch(
-    `https://ntfy.tionis.dev/janet-zulip-irc-bridge/${channel}`,
-    {
-      method: "POST",
-      headers: { Authorization: NTFY_TOKEN },
-      body: message,
-    },
-  );
-  if (!result.ok) {
-    console.error(`Failed to send notification: ${result.statusText}`);
+  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text: "Message from janet-zulip-irc-bridge in channel " + channel +
+        ":\n" + message,
+      parse_mode: "markdown",
+      disable_notification: true,
+    }),
+  });
+  if (resp.status !== 200) {
+    console.error(await resp.text());
+    throw new Error("Failed to send notification");
   }
 }
 
 async function ntfy_json(channel: string, message: unknown) {
-  const result = await fetch(
-    `https://ntfy.tionis.dev/janet-zulip-irc-bridge/${channel}?format=json`,
-    {
-      method: "POST",
-      headers: { Authorization: NTFY_TOKEN },
-      body: JSON.stringify(message),
-    },
+  await ntfy(
+    channel,
+    "```json\n" + JSON.stringify(message, null, 2) + "```",
   );
-  if (!result.ok) {
-    console.error(`Failed to send notification: ${result.statusText}`);
-  }
 }
 
 // Helper functions
