@@ -1,4 +1,4 @@
-#!/bin/env -S deno run --unstable-cron --allow-net=janet.zulipchat.com:443,irc.libera.chat:6697,ntfy.tionis.dev:443,ok.tionis.dev:443 --allow-env --env
+#!/bin/env -S deno run --unstable-cron --allow-net --allow-env --env
 import { Client as IrcClient } from "https://deno.land/x/irc@v0.15.0/mod.ts";
 
 const version = "0.1.0";
